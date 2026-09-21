@@ -10,6 +10,7 @@ Example:
 """
 
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
@@ -67,11 +68,11 @@ class ComputeResource:
     id: str
     type: str
     cpu_capacity: float
-    available_cpu: float = None
     memory_capacity: float
-    available_memory: float = None
     latency: float
     bandwidth: float
+    available_cpu: Optional[float] = None
+    available_memory: Optional[float] = None
     energy_level: float = 100.0
 
     def __post_init__(self) -> None:
