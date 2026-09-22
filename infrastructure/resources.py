@@ -52,3 +52,26 @@ class CloudServer(ComputeResource):
             bandwidth=bandwidth,
             energy_level=energy_level,
         )
+
+
+class IoTDeviceResource(ComputeResource):
+    """Represents an IoT device with limited computational resources."""
+
+    def __init__(
+        self,
+        id: str,
+        cpu_capacity: float,
+        memory_capacity: float,
+        latency: float,
+        bandwidth: float,
+        energy_level: float = 100.0,
+    ) -> None:
+        super().__init__(
+            id=id,
+            type="device",
+            cpu_capacity=cpu_capacity,
+            memory_capacity=memory_capacity,
+            latency=latency,
+            bandwidth=bandwidth,
+            energy_level=energy_level,
+        )
