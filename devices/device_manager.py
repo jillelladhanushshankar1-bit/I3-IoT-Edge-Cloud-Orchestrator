@@ -42,43 +42,99 @@ class DeviceManager:
 
         return workloads
 
+    def run_simulation(self, cycles=12):
+        """
+        Run the complete IoT simulation for a number of cycles.
+
+        Each cycle:
+        1. Updates all virtual devices.
+        2. Detects events.
+        3. Generates workloads from detected events.
+
+        Returns:
+            A list containing sensor readings, events, and workloads
+            generated during each simulation cycle.
+        """
+
+        simulation_results = []
+
+        for cycle in range(1, cycles + 1):
+            # Update all virtual sensors
+            self.update_devices()
+
+            # Detect events
+            events = self.detect_events()
+
+            # Generate workloads from detected events
+            workloads = self.generate_workloads(events)
+
+            # Store readings and results for this cycle
+            cycle_readings = {}
+
+            for device in self.devices:
+                cycle_readings[device.device_id] = {
+                    "temperature": device.temperature,
+                    "vibration": device.vibration,
+                    "state": device.state,
+                    "has_anomaly": device.has_anomaly,
+                }
+
+            simulation_results.append(
+                {
+                    "cycle": cycle,
+                    "readings": cycle_readings,
+                    "events": events,
+                    "workloads": workloads,
+                }
+            )
+
+        return simulation_results
+
 
 if __name__ == "__main__":
     manager = DeviceManager()
 
-    sensor = IndustrialSensor("industrial-001")
+    # Deterministic sensor for hackathon demonstration
+    sensor = IndustrialSensor(
+        "industrial-001",
+        demo_mode=True,
+    )
+
     manager.add_device(sensor)
 
-    print("Updating virtual devices...")
+    print("Running complete IoT simulation...\n")
 
-    # Simulate normal sensor readings
-    for _ in range(3):
-        manager.update_devices()
+    results = manager.run_simulation(cycles=12)
+
+    for result in results:
+        cycle = result["cycle"]
+        readings = result["readings"]["industrial-001"]
+        events = result["events"]
+        workloads = result["workloads"]
 
         print(
-            f"Temperature: {sensor.temperature:.2f} °C | "
-            f"Vibration: {sensor.vibration:.2f}"
+            f"Cycle {cycle:02d} | "
+            f"Temperature: {readings['temperature']:.2f} °C | "
+            f"Vibration: {readings['vibration']:.2f} | "
+            f"State: {readings['state'].upper():8s}"
         )
 
-    # Simulate a critical machine condition
-    sensor.temperature = 75.0
-    sensor.vibration = 2.5
+        if events:
+            for event in events:
+                print(
+                    f"  Event: {event.event_type} | "
+                    f"Severity: {event.severity}"
+                )
 
-    print("\nDetecting events...")
+            for workload in workloads:
+                print(
+                    f"  Workload: {workload.id} | "
+                    f"CPU: {workload.cpu_required} | "
+                    f"Memory: {workload.memory_required} MB | "
+                    f"Latency: {workload.latency_requirement} ms | "
+                    f"Priority: {workload.priority}"
+                )
+        else:
+            print("  Event: None")
 
-    events = manager.detect_events()
-
-    if events:
-        for event in events:
-            print("\nEvent detected:")
-            print(event)
-
-        workloads = manager.generate_workloads(events)
-
-        print("\nGenerated workloads:")
-
-        for workload in workloads:
-            print(workload)
-
-    else:
-        print("No events detected.")
+        print()

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from devices.industrial_sensor import IndustrialSensor
 
 
@@ -22,16 +23,16 @@ class EventDetector:
         self.event_counter = 0
 
     def detect(self, device: IndustrialSensor) -> SensorEvent | None:
-        """Analyze a device and create an event when abnormal conditions occur."""
+        """Detect an event from the current sensor readings."""
 
         temperature = device.temperature
         vibration = device.vibration
 
-        # No abnormal condition
+        # Normal operating condition
         if temperature < 60.0 and vibration < 1.5:
             return None
 
-        # Determine event type
+        # Critical anomaly
         if temperature >= 70.0 and vibration >= 2.0:
             event_type = "thermal_vibration_anomaly"
             severity = "critical"
@@ -40,30 +41,28 @@ class EventDetector:
                 "Possible machine failure."
             )
 
-        elif temperature >= 70.0:
-            event_type = "thermal_anomaly"
+        # High anomaly
+        elif temperature >= 70.0 or vibration >= 2.0:
+            event_type = "thermal_or_vibration_anomaly"
             severity = "high"
-            description = (
-                "Abnormally high machine temperature detected."
-            )
 
-        elif vibration >= 2.0:
-            event_type = "vibration_anomaly"
-            severity = "high"
-            description = (
-                "Abnormally high machine vibration detected."
-            )
+            if temperature >= 70.0:
+                description = "Abnormally high machine temperature detected."
+            else:
+                description = "Abnormally high machine vibration detected."
 
+        # Medium warning
         else:
             event_type = "machine_warning"
             severity = "medium"
             description = (
-                "Machine operating conditions are outside the normal range."
+                "Machine operating conditions are outside "
+                "the normal range."
             )
 
         self.event_counter += 1
 
-        return SensorEvent(
+        event = SensorEvent(
             event_id=f"event-{self.event_counter:04d}",
             device_id=device.device_id,
             event_type=event_type,
@@ -73,39 +72,31 @@ class EventDetector:
             description=description,
         )
 
+        device.latest_event = event
+
+        return event
+
 
 if __name__ == "__main__":
-    sensor = IndustrialSensor("industrial-001")
+    sensor = IndustrialSensor("industrial-001", demo_mode=True)
     detector = EventDetector()
 
-    print("Testing normal condition...")
+    print("Testing Event Detector...\n")
 
-    sensor.temperature = 35.0
-    sensor.vibration = 0.30
+    for cycle in range(12):
+        sensor.update()
+        event = detector.detect(sensor)
 
-    event = detector.detect(sensor)
-
-    if event is None:
-        print("No event detected.")
-    else:
-        print(event)
-
-    print("\nTesting warning condition...")
-
-    sensor.temperature = 62.0
-    sensor.vibration = 1.60
-
-    event = detector.detect(sensor)
-
-    if event is not None:
-        print(event)
-
-    print("\nTesting critical condition...")
-
-    sensor.temperature = 75.0
-    sensor.vibration = 2.50
-
-    event = detector.detect(sensor)
-
-    if event is not None:
-        print(event)
+        if event:
+            print(
+                f"Cycle {cycle + 1:02d} | "
+                f"State: {sensor.state.upper():8s} | "
+                f"Severity: {event.severity.upper():8s} | "
+                f"Type: {event.event_type}"
+            )
+        else:
+            print(
+                f"Cycle {cycle + 1:02d} | "
+                f"State: {sensor.state.upper():8s} | "
+                f"Event: NONE"
+            )
