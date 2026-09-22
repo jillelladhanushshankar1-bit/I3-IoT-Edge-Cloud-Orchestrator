@@ -38,6 +38,12 @@ def get_state() -> Dict[str, Any]:
     return simulation_state.get_snapshot()
 
 
+@app.post("/api/simulation/step", response_model=Dict[str, Any])
+def simulation_step() -> Dict[str, Any]:
+    """Perform one simulation cycle and return the updated state snapshot."""
+    return simulation_state.step()
+
+
 @app.get("/health")
 def health_check() -> Dict[str, str]:
     """Health check endpoint."""
